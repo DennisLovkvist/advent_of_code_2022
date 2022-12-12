@@ -26,8 +26,8 @@ int main()
     int value = 0;
     int index = 0;
 
-    int max_value = 0;
-    int max_index = 0;
+    int max_value[3] = {0,0,0};
+    int max_index[3] = {0,0,0};
 
     for (size_t i = 0; i < length; i++)
     {
@@ -35,11 +35,17 @@ int main()
         {
             if(carret == 0)
             {
-                if(value > max_value)
+                for (size_t j = 0; j < 3; j++)
                 {
-                    max_value = value;
-                    max_index = index;
+                    if(value > max_value[j])
+                    {
+                        max_value[j] = value;
+                        max_index[j] = index;
+                        break;
+                    }
                 }
+                
+                
                 index ++;
                 value = 0;
             }
@@ -58,7 +64,12 @@ int main()
             carret++;
         }
     }
+
+    int sum = max_value[0]+max_value[1]+max_value[2];
     
-    printf("%s%i%s%i%s\n","Elf number ",max_index+1," with ", max_value, " calories");
+    printf("%s%i%s%i%s\n","Elf number ",max_index[0]+1," with ", max_value[0], " calories.");
+    
+    printf("%s%i%s\n","The top three Elves are carrying ",sum," calories in total.");
+    
     return 1;
 }
