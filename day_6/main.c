@@ -16,8 +16,11 @@ static char* load_input(char *path)
     source_code[fsize] = '\0';
     return source_code;
 }
-void part1()
+int main()
 {
+    //int unique_sequence_length = 4;//part1
+    int unique_sequence_length = 14;//part2
+
     char* input_raw = load_input("input.txt");
     int length = strlen(input_raw);
 
@@ -29,9 +32,9 @@ void part1()
         if(c != '\n')
         {
             int flag = 0;
-            for (size_t i = 0; i < 4; i++)
+            for (size_t i = 0; i < unique_sequence_length; i++)
             {
-                for (size_t j = i+1; j < 4; j++)
+                for (size_t j = i+1; j < unique_sequence_length; j++)
                 {
                     if(input_raw[index+i] == input_raw[index+j])
                     {
@@ -43,20 +46,13 @@ void part1()
             end:
             if(!flag)
             {
-                printf("%i\n",(index +4));
-
-                printf("%c,%c,%c,%c",input_raw[index+0],input_raw[index+1],input_raw[index+2],input_raw[index+3]);
-                return;
+                printf("%i\n",(index +unique_sequence_length));
+                return 1;
             }
         }
         index++;
     }
 
-}
-int main()
-{
-    part1();
-    //part2();
     return 1;
 }
 
