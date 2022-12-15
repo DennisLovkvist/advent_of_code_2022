@@ -119,11 +119,103 @@ void part1()
     }
     printf("visible: %i\n",visible);
 }
+void part2()
+{
+    char* input_raw = load_input("input.txt");
+    int length = strlen(input_raw);
+
+    int *trees = malloc(sizeof(int)*length);
+
+    int stride = 0;
+    int index = 0;
+    for (size_t i = 0; i <= length; i++)
+    {
+        char c = input_raw[i];
+        if(c == '\n' || c == '\0')
+        {
+            stride ++;
+        }
+        else
+        {
+            trees[index++] = input_raw[i]-48;//ascii shift
+        }
+    }
+
+    int len = index;
+
+    unsigned int visible = 0;
+    int height = len/stride;
+
+    int hightest_score = 0;
+
+    for (size_t i = 0; i < len; i++)
+    {
+        int x = i % stride;
+        int y = i / stride;
+
+        int view_distance[4] = {0,0,0,0};
+        int tx = x+1;
+        int score = 0;
+        
+        while(tx < stride)
+        {
+            int coord = y * stride + tx;
+            view_distance[0]++;
+            if(trees[coord] >= trees[i])
+            {
+                break;
+            }
+            tx ++;
+        }
+        tx = x-1;
+        while(tx >= 0)
+        {
+            int coord = y * stride + tx;
+            view_distance[1]++;
+            if(trees[coord] >= trees[i])
+            {
+                break;
+            }
+            tx --;
+        }
+        int ty = y+1;
+        while(ty < height)
+        {
+            int coord = ty * stride + x;
+            view_distance[2]++;
+            if(trees[coord] >= trees[i])
+            {
+                break;
+            }
+            ty++;
+        }
+        ty = y-1;
+        while(ty >= 0)
+        {
+            int coord = ty * stride + x;
+            view_distance[3]++;
+            if(trees[coord] >= trees[i])
+            {
+                break;
+            }
+            ty --;
+        }
+
+        score = view_distance[0]*view_distance[1]*view_distance[2]*view_distance[3];
+
+               printf("%i,%i,%i,%i\n",view_distance[0],view_distance[1],view_distance[2],view_distance[3]);
+        if(hightest_score < score)
+        {
+            hightest_score = score;
+        }
+    }
+    printf("highest view distance: %i\n",hightest_score);
+}
 int main()
 {
 
-    part1();
-
+    //part1();
+    part2();
     return 1;
 }
 
