@@ -9,6 +9,9 @@
 #define MAX_SUB_DIRECTORIES 32
 #define NAME_BUFFER_SIZE 32
 
+#define TOTAL_DISK_SPACE 70000000
+#define REQUIRED_FREE_SPACE 30000000
+
 typedef struct Directory Directory;
 typedef struct File File;
 struct Directory
@@ -175,6 +178,28 @@ void calc_size(Directory *directory, int *sum)
         *sum += directory->size;
     }
 }
+void find_optimal_directory_for_deletion(Directory *directory,int used_disk_space, int *nearest,Directory **directory_optimal)
+{
+
+    int free_disk_space = TOTAL_DISK_SPACE - used_disk_space + directory->size;
+    
+    if(free_disk_space > REQUIRED_FREE_SPACE)
+    {
+        int delta = free_disk_space - REQUIRED_FREE_SPACE;
+        if(delta < *nearest)
+        {
+            *directory_optimal = directory;
+            *nearest = delta;
+        }
+    }
+
+    for (size_t i = 0; i < directory->count_sub_directories; i++)
+    {
+        find_optimal_directory_for_deletion(directory->sub_directories[i],used_disk_space, nearest,directory_optimal);
+    }
+
+    
+}
 static char* load_input(char *path)
 {
     FILE *f = fopen(path, "rb");
@@ -264,9 +289,16 @@ int main()
     
     int sum = 0;
     calc_size(&root,&sum);
-    directory_print(&root,0);
+    //directory_print(&root,0);
 
-    printf("sum: %i\n",sum);
+    int nearest = TOTAL_DISK_SPACE;
+    Directory *directory_optimal;
+    find_optimal_directory_for_deletion(&root,root.size,&nearest,&directory_optimal);
+    
+
+    printf("combined size of all directories under %i is: %i\n",MAX_SIZE ,sum);
+
+    printf("%s is the most optimal directory for removal with a size of: %i\n",directory_optimal->name,directory_optimal->size);
 
     return 1;
 }
