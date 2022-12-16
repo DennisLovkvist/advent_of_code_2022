@@ -203,7 +203,7 @@ void part1()
 }
 void part2()
 {
-    char* input_raw = load_input("input_part_2(example).txt");
+    char* input_raw = load_input("input_part_2.txt");
     int length = strlen(input_raw);
 
     Vector2i *visited = malloc(sizeof(Vector2i)*100000);
@@ -218,13 +218,6 @@ void part2()
         rope[i].x = 0;
         rope[i].y = 0;
     }
-    Vector2i rope_v[10];
-    for (size_t i = 0; i < 10; i++)
-    {
-        rope_v[i].x = 0;
-        rope_v[i].y = 0;
-    }
-    
 
 
     while(index <= length)
@@ -259,10 +252,6 @@ void part2()
             for (size_t j = 0; j < magnitude; j++)
             {
 
-            debug_print2(rope);
-                rope_v[0].x = rope[0].x;
-                rope_v[0].y = rope[0].y;
-
                 if(direction == 'R')
                 {
                     rope[0].x ++;
@@ -280,28 +269,38 @@ void part2()
                     rope[0].y --;
                 }
 
-
                 for (size_t i = 1; i <= 9; i++)
                 {
-                    int dx = rope[i-1].x - rope[i].x;
-                    int dy = rope[i-1].y - rope[i].y;
-                    rope_v[i].x = 0;
-                    rope_v[i].y = 0;
-                    if(abs(dx) >= 2)
-                    {
-                        rope_v[i].x = dx;
-                    }
-                    if(abs(dy) >= 2)
-                    {
-                        rope_v[i].y = dy;
-                    }
-                }
-                for (size_t i = 1; i <= 9; i++)
-                {
-                    rope[i].x += rope_v[i].x;
-                    rope[i].y += rope_v[i].y;
-                }
+                    Vector2i *head = &rope[i-1];
+                    Vector2i *tail = &rope[i];
 
+                    int dx = head->x - tail->x;
+                    int dy = head->y - tail->y;
+
+                    if(abs(dx) <= 1 && abs(dy) <=1)
+                    {
+
+                    }
+                    else
+                    {
+                        if(dx < 0)
+                        {
+                            tail->x--;
+                        }
+                        else if(dx > 0)
+                        {
+                            tail->x++;
+                        }
+                        if(dy < 0)
+                        {
+                            tail->y--;
+                        }
+                        else if(dy > 0)
+                        {
+                            tail->y++;
+                        }
+                    }
+                }
                 
                 unsigned int allready_visited = 0;
                 for (size_t k = 0; k < visit_count; k++)
