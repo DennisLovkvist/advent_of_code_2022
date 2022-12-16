@@ -26,6 +26,30 @@ static char* load_input(char *path)
     source_code[fsize] = '\0';
     return source_code;
 }
+void debug_print(Vector2i head, Vector2i tail)
+{
+    for (int j = 10; j > -1; j--)
+    {
+        for (int i = -1; i < 10; i++)
+        {
+            if(head.x == i && head.y == j)
+            {
+                printf("%s","H");
+            }
+            else if(tail.x == i && tail.y == j)
+            {
+                printf("%s","T");
+            }
+            else
+            {
+                printf("%s",".");
+            }
+        }
+        printf("%s","\n");
+    }
+
+    sleep(1);
+}
 void part1()
 {
     char* input_raw = load_input("input.txt");
@@ -41,106 +65,100 @@ void part1()
         int index = 0;
 
         int start = 0;
+
+
     while(index <= length)
     {
         if(input_raw[index] == '\n'|| input_raw[index] == '\0')
         {
+            int end = index;
 
+            char direction = input_raw[start];
 
-            start = index+1;
-        char direction = input_raw[i];
-        int magnitude = input_raw[i+2]-48;//ascii shift
-
-
-        printf("%c -> %i\n", direction,magnitude);
-
-        for (size_t j = 0; j < magnitude; j++)
-        {
-            int prev_x = head.x;
-            int prev_y = head.y;
-
-            if(direction == 'R')
+            int len = end-start+1;
+            char *magnitude_str = alloca(sizeof(char)*(len+1));
+            int I = 0;
+            for (size_t i = start+1; i < end; i++)
             {
-                head.x ++;
-            }
-            if(direction == 'L')
-            {
-                head.x --;
-            }
-            if(direction == 'U')
-            {
-                head.y ++;
-            }
-            if(direction == 'D')
-            {
-                head.y --;
-            }
-
-            int dx = head.x - tail.x;
-            int dy = head.y - tail.y;
-
-            
-            if(abs(dx) > 1)
-            {
-                tail.x += (head.x > tail.x) ? 1:-1;
-                tail.y = prev_y;
-            }
-            if(abs(dy) > 1)
-            {
-                tail.y += (head.y > tail.y) ? 1:-1;
-                tail.x = prev_x;
-            }
-
-            
-            unsigned int allready_visited = 0;
-            for (size_t k = 0; k < visit_count; k++)
-            {
-                if(visited[k].x == tail.x && visited[k].y == tail.y)
+                if(input_raw[i] != ' ')
                 {
-                    allready_visited = 1;
-                    break;
+                    magnitude_str[I++] = input_raw[i];
                 }
             }
-            if(!allready_visited)
+            if(I < len)
             {
-                visited[visit_count].x = tail.x;
-                visited[visit_count].y = tail.y;
-                visit_count++;
+                magnitude_str[I] = '\0';
             }
-index++;
-/*
-            for (int j = 10; j > -1; j--)
+            else
             {
-                for (int i = -1; i < 10; i++)
-                {
-                    if(head.x == i && head.y == j)
-                    {
-                        printf("H");
-                    }
-                    else if(tail.x == i && tail.y == j)
-                    {
-                        printf("T");
-                    }
-                    else
-                    {
-                        printf(".");
-                    }
-                }
-                printf("\n");
+                magnitude_str[len] = '\0';
             }
             
-*/
+            int magnitude = atoi(magnitude_str);
 
-            //sleep(1);
+            for (size_t j = 0; j < magnitude; j++)
+            {
+                int prev_x = head.x;
+                int prev_y = head.y;
+
+                if(direction == 'R')
+                {
+                    head.x ++;
+                }
+                if(direction == 'L')
+                {
+                    head.x --;
+                }
+                if(direction == 'U')
+                {
+                    head.y ++;
+                }
+                if(direction == 'D')
+                {
+                    head.y --;
+                }
+
+                int dx = head.x - tail.x;
+                int dy = head.y - tail.y;
+
                 
+                if(abs(dx) > 1)
+                {
+                    tail.x += (head.x > tail.x) ? 1:-1;
+                    tail.y = prev_y;
+                }
+                if(abs(dy) > 1)
+                {
+                    tail.y += (head.y > tail.y) ? 1:-1;
+                    tail.x = prev_x;
+                }
+
+                
+                unsigned int allready_visited = 0;
+                for (size_t k = 0; k < visit_count; k++)
+                {
+                    if(visited[k].x == tail.x && visited[k].y == tail.y)
+                    {
+                        allready_visited = 1;
+                        break;
+                    }
+                }
+                if(!allready_visited)
+                {
+                    visited[visit_count].x = tail.x;
+                    visited[visit_count].y = tail.y;
+                    visit_count++;
+                }
+            }
             
+            start = index+1;
         }
 
-    }
+        index++;
     }
 
 
-        printf("%i\n",visit_count);
+    printf("%i\n",visit_count);
     
     
 }
