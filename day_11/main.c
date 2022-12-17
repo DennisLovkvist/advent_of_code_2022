@@ -12,7 +12,7 @@ typedef struct Monkey Monkey;
 struct Monkey
 {
     int index;
-    int items[32];
+    unsigned long items[32];
     int item_count;
     int worry_operator, worry_operand,worry_operand_is_number;
     int test_operand;
@@ -58,7 +58,7 @@ void parse_header(char*line,int length, Monkey *monkey)
     monkey->index = atoi(digits);
 
 }
-void to_arrayi(char*line,int length, char delimiter,int array[32], int *array_size)
+void to_arrayi(char*line,int length, char delimiter,unsigned long array[32], int *array_size)
 {
     *array_size = 0;
     int delimiters = 0;
@@ -202,6 +202,21 @@ Monkey *get_monkey_by_index(Monkey monkey_pool[10],int monkey_count, int index)
     return NULL;
     
 }
+static unsigned long gfc(unsigned long a,  unsigned long b)
+{
+    while (b != 0)
+    {
+        unsigned long n = b;
+        b = a % b;
+        a = n;
+    }
+    return a;
+}
+
+static unsigned long lcm(unsigned long a,  unsigned long b)
+{
+    return (a / gfc(a, b)) * b;
+}
 static char* load_input(char *path)
 {
     FILE *f = fopen(path, "rb");
@@ -216,7 +231,7 @@ static char* load_input(char *path)
 }
 int main()
 {
-    char* input_raw = load_input("input(example).txt");
+    char* input_raw = load_input("input.txt");
     int length = strlen(input_raw);
     
     int parsing_stage = PARSING_HEADER;
@@ -285,8 +300,17 @@ int main()
     #define DEBUG 0
     //print_monkey(&monkey_pool[0]);
 
+
+    int common = lcm(monkey_pool[0].test_operand ,monkey_pool[1].test_operand);
+    
+    for (size_t i = 2; i < monkey_count; i++)
+    {
+        common = lcm(common,monkey_pool[i].test_operand );
+    }
+    
+
     int round = 0;
-    for (size_t i = 0; i < 20; i++)
+    for (size_t i = 0; i < 10000; i++)
     {
         for (size_t j = 0; j < monkey_count; j++)
         {
@@ -295,7 +319,7 @@ int main()
             int item_count = monkey->item_count;
             for (size_t k = 0; k < monkey->item_count; k++)
             {
-                int *item = &monkey->items[k];
+                unsigned long *item = &monkey->items[k];
                 //Inspection
                 monkey->number_of_inspections++;
                 if(DEBUG)printf("Monkey %i inspects an item with a worry level of %i.\n",monkey->index,*item);
@@ -325,7 +349,9 @@ int main()
                         if(DEBUG)printf("    Worry level is multiplied by %i to %i.\n",*item,*item);
                     }
                 }
-                *item /= 3;
+                //*item /= 3;
+
+                *item = *item%common;
                 if(DEBUG)printf("    Monkey gets bored with item. Worry level is divided by 3 to %i.\n", *item);
                 //Test
 
@@ -349,9 +375,8 @@ int main()
                 receiving_monkey->item_count ++;
                 *item = 0;
                 item_count --;
-
             }
-
+            
             monkey->item_count = item_count;
 
         }
@@ -371,8 +396,8 @@ int main()
         printf("\n");
         
     }
-    int most_active_index[2] = {0,0};
-    int most_active_value[2] = {0,0};   
+    unsigned long most_active_index[2] = {0,0};
+    unsigned long most_active_value[2] = {0,0};   
     for (size_t i = 0; i < monkey_count; i++)
     {
         Monkey *monkey = &monkey_pool[i];
@@ -393,7 +418,9 @@ int main()
     }
 
      
-    printf("%i\n", most_active_value[0]*most_active_value[1]);
+    printf("%lu\n", most_active_value[0]*most_active_value[1]);
+
+
     
     return 1;
 }
