@@ -115,7 +115,7 @@ void list_remove(Node *node, Node **list, int *list_length)
     node->list_index = -1;
 }
 
-void find_path(Node *map, int x1, int y1, int x2, int y2, Node **list_opened,Node **list_closed)
+int find_path(Node *map, int x1, int y1, int x2, int y2, Node **list_opened,Node **list_closed)
 {
     int index_opened = 0,index_closed = 0;
     int index = index_from_xy(x1,y1,STRIDE);
@@ -160,8 +160,7 @@ void find_path(Node *map, int x1, int y1, int x2, int y2, Node **list_opened,Nod
                 temp_node = temp_node->parent;
                 steps ++;
             }
-            printf("steps %i\n",steps);
-            return;
+            return steps;
         }
         else
         {
@@ -215,7 +214,6 @@ void find_path(Node *map, int x1, int y1, int x2, int y2, Node **list_opened,Nod
 
         for (size_t i = 0; i < STRIDE*HEIGHT; i++)
         {
-            printf("%i\n",map[i].G);
             if(map[i].G < node->G)
             {
                 node = &map[i];
@@ -227,6 +225,8 @@ void find_path(Node *map, int x1, int y1, int x2, int y2, Node **list_opened,Nod
         node->visual = ' ';
 
     end:
+
+    return -1;
 
 
 }
@@ -292,9 +292,32 @@ int main()
     Node **nodes_open = malloc(sizeof(Node*)*1000);
     Node **nodes_closed = malloc(sizeof(Node*)*1000);
 
-    find_path(&map[0],xs,ys,xe,ye, &nodes_open[0],&nodes_closed[0]);
+    //find_path(&map[0],xs,ys,xe,ye, &nodes_open[0],&nodes_closed[0]);
+
+    int shortest = 100000;
+
+    for (size_t i = 0; i < nodes_length ; i++)
+    {
+        if(map[i].height == 'a')
+        {
+            xs = map[i].x;
+            ys = map[i].y;
+            int sp = find_path(&map[0],xs,ys,xe,ye, &nodes_open[0],&nodes_closed[0]);
+
+            if(sp != -1)
+            {
+                if(sp < shortest)
+                {
+                    shortest = sp;
+                }
+            }
+        }
+    }
+    
+    
 
     debug_print(&map[0]);
+    printf("%i\n", shortest);
 
 
     
