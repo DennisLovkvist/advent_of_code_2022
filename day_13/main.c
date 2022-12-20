@@ -12,6 +12,10 @@
 #define ELEMENT_TYPE_LIST 1
 #define ELEMENT_TYPE_DIGIT 2
 
+#define CMP_RESULT_LOWER 0
+#define CMP_RESULT_EQUAL 1
+#define CMP_RESULT_HIGHER 2
+
 
 typedef struct Element Element;
 struct Element
@@ -68,7 +72,6 @@ void append_child(Element *parent,Element  *child)
 }
 Element *parse(char *line)
 {
-    printf("%s\n",line);
     int index = 0;
     char c = line[index];
 
@@ -178,16 +181,126 @@ void  debug_print_element_tree(Element *e )
     }
     printf("%s","]");
     
-}         
+}   
+unsigned int cmp_elements(Element *e1,Element *e2)
+{
+    if(e1->type == ELEMENT_TYPE_DIGIT && e2->type == ELEMENT_TYPE_DIGIT)
+    {
+        //printf("- Compare %i vs %i\n",e1->digit , e2->digit);
+        if(e1->digit < e2->digit)
+        {
+            return CMP_RESULT_LOWER;
+        }
+        else if(e1->digit == e2->digit)
+        {
+            return CMP_RESULT_EQUAL;
+        }
+        else if(e1->digit > e2->digit)
+        {
+            return CMP_RESULT_HIGHER;
+        }
+    }
+    else if(e1->type == ELEMENT_TYPE_LIST && e2->type == ELEMENT_TYPE_LIST)
+    {
+        
+        for (size_t i = 0; i < e1->child_count && i < e2->child_count; i++)
+        {
+            unsigned int cmp_result = cmp_elements(e1->children[i],e2->children[i]);
+
+            if(cmp_result == CMP_RESULT_LOWER)
+            {
+                return CMP_RESULT_LOWER;
+            }
+            else if(cmp_result == CMP_RESULT_HIGHER)
+            {
+                return CMP_RESULT_HIGHER;
+            }
+        }
+        if(e1->child_count == e2->child_count)
+        {
+            return CMP_RESULT_EQUAL;
+        }
+        else if(e1->child_count < e2->child_count)
+        {
+            return CMP_RESULT_LOWER;
+        }
+        else
+        {
+            return CMP_RESULT_HIGHER;
+        }
+        
+    }
+    else if(e1->type == ELEMENT_TYPE_DIGIT && e2->type == ELEMENT_TYPE_LIST)
+    {
+        for (size_t i = 0; i < 1 && i < e2->child_count; i++)
+        {
+            unsigned int cmp_result = cmp_elements(e1,e2->children[i]);
+
+            if(cmp_result == CMP_RESULT_LOWER)
+            {
+                return CMP_RESULT_LOWER;
+            }
+            else if(cmp_result == CMP_RESULT_HIGHER)
+            {
+                return CMP_RESULT_HIGHER;
+            }
+        }
+        if(1 == e2->child_count)
+        {
+            return CMP_RESULT_EQUAL;
+        }
+        else if(1 < e2->child_count)
+        {
+            return CMP_RESULT_LOWER;
+        }
+        else
+        {
+            return CMP_RESULT_HIGHER;
+        }
+    }
+    else if(e1->type == ELEMENT_TYPE_LIST && e2->type == ELEMENT_TYPE_DIGIT)
+    {
+        for (size_t i = 0; i < 1 && i < e1->child_count; i++)
+        {
+            unsigned int cmp_result = cmp_elements(e1->children[i],e2);
+
+            if(cmp_result == CMP_RESULT_LOWER)
+            {
+                return CMP_RESULT_LOWER;
+            }
+            else if(cmp_result == CMP_RESULT_HIGHER)
+            {
+                return CMP_RESULT_HIGHER;
+            }
+        }
+        if(1 == e1->child_count)
+        {
+            return CMP_RESULT_EQUAL;
+        }
+        else if(1 > e1->child_count)
+        {
+            return CMP_RESULT_LOWER;
+        }
+        else
+        {
+            return CMP_RESULT_HIGHER;
+        }
+    }
+}     
 int main()
 {
     srand(time(NULL));
 
-    char* input_raw = load_input("input(example).txt");
+    char* input_raw = load_input("input.txt");
     int length = strlen(input_raw);
 
     int index = 0;
     int start = 0;
+
+    Element *packets[2];
+    unsigned int packet = 0;
+    unsigned int sum = 0;
+    int pair = 0;
     while(index <= length)
     {
         char c = input_raw[index];
@@ -200,14 +313,44 @@ int main()
                 memcpy(line,&input_raw[start],sizeof(char)*len);
                 line[len] = '\0';
 
-                Element *e = parse(line);
+                packets[packet] = parse(line);
+                packet ++;
 
-                debug_print_element_tree(e->children[0]);
-                printf("\n");
+                
 
 
             // printf("%i\n",e->child_count);
                 
+            }
+            else
+            {
+                /*
+                debug_print_element_tree(packets[0]);
+                printf("\n");
+                debug_print_element_tree(packets[1]);
+                printf("\nlol\n");*/
+
+                pair ++;
+                printf("== Pair %i ==\n",pair);
+                printf("- Compare ");
+                debug_print_element_tree(packets[0]->children[0]);
+                printf(" vs ");
+                debug_print_element_tree(packets[1]->children[0]);
+                
+
+                unsigned int cmp_res = cmp_elements(packets[0]->children[0],packets[1]->children[0]);
+                printf("\nis in right order: %i\n\n",cmp_res);
+
+                if(cmp_res != CMP_RESULT_HIGHER)
+                {
+
+                    sum +=  pair;
+                }
+
+                //free_packet(packets[0]);TODO
+                //free_packet(packets[1]);TODO
+                
+                packet = 0;
             }
 
         start = index +1;
@@ -215,6 +358,8 @@ int main()
         
         index++;
     }
+
+    printf("packets in order: %i\n",sum);
 
     return 1;
 }
