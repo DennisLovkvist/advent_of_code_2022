@@ -286,11 +286,9 @@ unsigned int cmp_elements(Element *e1,Element *e2)
             return CMP_RESULT_HIGHER;
         }
     }
-}     
-int main()
+} 
+void part1()
 {
-    srand(time(NULL));
-
     char* input_raw = load_input("input.txt");
     int length = strlen(input_raw);
 
@@ -315,45 +313,24 @@ int main()
 
                 packets[packet] = parse(line);
                 packet ++;
-
-                
-
-
-            // printf("%i\n",e->child_count);
-                
             }
             else
-            {
-                /*
-                debug_print_element_tree(packets[0]);
-                printf("\n");
-                debug_print_element_tree(packets[1]);
-                printf("\nlol\n");*/
-
+            {                
                 pair ++;
-                printf("== Pair %i ==\n",pair);
-                printf("- Compare ");
-                debug_print_element_tree(packets[0]->children[0]);
-                printf(" vs ");
-                debug_print_element_tree(packets[1]->children[0]);
-                
-
                 unsigned int cmp_res = cmp_elements(packets[0]->children[0],packets[1]->children[0]);
-                printf("\nis in right order: %i\n\n",cmp_res);
 
                 if(cmp_res != CMP_RESULT_HIGHER)
                 {
 
                     sum +=  pair;
                 }
-
                 //free_packet(packets[0]);TODO
                 //free_packet(packets[1]);TODO
                 
                 packet = 0;
             }
 
-        start = index +1;
+            start = index +1;
         }
         
         index++;
@@ -361,6 +338,107 @@ int main()
 
     printf("packets in order: %i\n",sum);
 
+}
+void sort_packets(Element **packets, int packets_length)
+{
+    int i, j;
+    Element *packet;
+    for (i = 1; i < packets_length; i++) 
+    {
+        packet = packets[i];
+        j = i - 1;
+
+        while (j >= 0 && cmp_elements(packets[j],packet) != CMP_RESULT_LOWER) 
+        {
+            packets[j + 1] = packets[j];
+            j = j - 1;
+        }
+        packets[j + 1] = packet;
+    }
+}
+void part2()
+{
+    char* input_raw = load_input("input.txt");
+    int length = strlen(input_raw);
+
+    int index = 0;
+    int start = 0;
+
+    int count = 0;
+    while(index <= length)
+    {
+        char c = input_raw[index];
+        if(c == '\n' || c == '\0')
+        {
+            if(input_raw[index-1] == ']')
+            {
+                count ++;
+            }
+        }
+        index++;
+    }
+
+    Element **packets = malloc(sizeof(Element*)*count);
+    unsigned int packet = 0;
+
+    index = 0;
+    while(index <= length)
+    {
+        char c = input_raw[index];
+        if(c == '\n' || c == '\0')
+        {
+            int len = index -start;
+            if(len > 0)
+            {
+                char *line = alloca(sizeof(char)*(len+1));
+                memcpy(line,&input_raw[start],sizeof(char)*len);
+                line[len] = '\0';
+
+                Element *root = parse(line);
+                packets[packet] = root->children[0];
+                packet ++;
+            }
+
+            start = index +1;
+        }
+        
+        index++;
+    }
+
+    sort_packets(packets,count);
+
+    int divider_2 = 0;
+    int divider_6 = 0;
+    int packet_index = 0;
+    for (size_t i = 0; i < count; i++)
+    {
+        packet_index ++;
+        if(packets[i]->child_count == 1)
+        {
+            if(packets[i]->children[0]->child_count == 1)
+            {
+                if(packets[i]->children[0]->children[0]->digit == 2)
+                {
+                    divider_2 = packet_index;
+                }
+                else if(packets[i]->children[0]->children[0]->digit == 6)
+                {
+                    divider_6 = packet_index;
+                }
+            }
+        }
+    }
+
+    printf("%i\n",divider_2*divider_6);
+    
+
+    
+
+}
+int main()
+{
+    //part1();
+    part2();
     return 1;
 }
 
