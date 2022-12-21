@@ -8,6 +8,11 @@
 #include <string.h>
 #include <unistd.h>
 
+#define SYMBOL_EMPTY '.'
+#define SYMBOL_SOLID '#'
+#define SYMBOL_FLUID 'o'
+#define SYMBOL_SOURCE '+'
+
 typedef struct Vector2i Vector2i;
 struct Vector2i
 {
@@ -80,31 +85,86 @@ ListVector2i *parse_line(char *line)
     list_append(vecotrs,x,y);
     return vecotrs;
 }
-void normalize_x(ListVector2i **vector_lists, int count)
+void get_boundaries(ListVector2i **vector_lists, int count,Vector2i *min,Vector2i *max)
 {
-    int smallest_x = vector_lists[0]->list[0].x;
-
     for (size_t i = 0; i < count; i++)
     {
        for (size_t j = 0; j < vector_lists[i]->count; j++)
        {
-            if(smallest_x > vector_lists[i]->list[j].x)
+            if(min->x > vector_lists[i]->list[j].x)
             {
-                smallest_x = vector_lists[i]->list[j].x;
+                min->x = vector_lists[i]->list[j].x;
+            }
+            if(min->y > vector_lists[i]->list[j].y)
+            {
+                min->y = vector_lists[i]->list[j].y;
+            }
+
+            if(max->x < vector_lists[i]->list[j].x)
+            {
+                max->x = vector_lists[i]->list[j].x;
+            }
+            if(max->y < vector_lists[i]->list[j].y)
+            {
+                max->y = vector_lists[i]->list[j].y;
             }
        }
     }
+    
+
+
+
+
+}
+void generate_line_segment(char *map, Vector2i v1, Vector2i v2, int stride)
+{
+    int width = abs(v1.x-v2.x)+1;
+    int height = abs(v1.y-v2.y)+1;
+    int start_x = (v1.x < v2.x) ? v1.x:v2.x;
+    int start_y = (v1.y < v2.y) ? v1.y:v2.y;
+
+
+    
+
+
+    for (size_t x = start_x; x < start_x+width; x++)
+    {
+        for (size_t y = start_y; y < start_y+height; y++)
+        {
+            int index = y * stride + x;
+            map[index] = SYMBOL_SOLID;
+        }
+    }
+    
+}
+void generate_terrain(ListVector2i **vector_lists, int count,int stride, char *map)
+{
     for (size_t i = 0; i < count; i++)
     {
-       for (size_t j = 0; j < vector_lists[i]->count; j++)
+        ListVector2i *line_list = vector_lists[i];
+
+        for (size_t j = 0; j < line_list->count-1; j++)
+        {
+            generate_line_segment(map,line_list->list[j],line_list->list[j+1],stride);
+        }
+    }
+    
+}
+void debug_print(char *map, int w, int h)
+{
+    for (size_t y = 0; y < h ; y++)
+    {
+       for (size_t x = 0; x < w; x++)
        {
-            vector_lists[i]->list[j].x -= smallest_x;
+            int index = y * w  + x;
+            printf("%c",map[index]);
        }
+       printf("\n");
     }
 }
 int main()
 {
-    char* input_raw = load_input("input(example).txt");
+    char* input_raw = load_input("input.txt");
     int length = strlen(input_raw);
 
     int index = 0;
@@ -147,17 +207,107 @@ int main()
         index++;
     }
 
-    normalize_x(vector_lists,count);
+    Vector2i min,max;
+    min.x = 100000;
+    min.y = 100000;
+    max.x = 0;
+    max.y = 0;
+
+    
+
+    get_boundaries(vector_lists,count,&min,&max);
+
 
     for (size_t i = 0; i < count; i++)
     {
        for (size_t j = 0; j < vector_lists[i]->count; j++)
        {
-            printf("%i,%i -> ",vector_lists[i]->list[j].x,vector_lists[i]->list[j].y);
+            vector_lists[i]->list[j].x -= min.x;
        }
-       printf("\n");
     }
+    max.x -= min.x;
     
+
+   
+
+    int WIDTH = max.x+1;
+    int HEIGHT = max.y+5;
+
+    int area = WIDTH *HEIGHT;
+
+    char *map = malloc(sizeof(char)*area);
+
+    for (size_t i = 0; i < area; i++)
+    {
+        map[i] = SYMBOL_EMPTY;
+    }
+
+    generate_terrain(vector_lists,count,WIDTH ,&map[0]);
+
+
+    Vector2i opening = {500-min.x,0};
+    map[opening.y*WIDTH+opening.x] = SYMBOL_SOURCE;
+
+    
+    
+    Vector2i particle = {opening.x,opening.y};
+    int particle_count = 0;
+    while(1)
+    {
+        //particle.y ++;
+        int Y = particle.y;
+
+        int index = (particle.y + 1) * WIDTH + particle.x;
+        if(map[index] == SYMBOL_SOLID || map[index] == SYMBOL_FLUID)
+        {
+            int index_left = (particle.y + 1) * WIDTH + (particle.x-1);
+            if(map[index_left] == SYMBOL_SOLID || map[index_left] == SYMBOL_FLUID)
+            {
+                int index_right = (particle.y + 1) * WIDTH + (particle.x+1);
+                if(map[index_right] == SYMBOL_SOLID || map[index_right] == SYMBOL_FLUID)
+                {
+
+                }
+                else
+                {
+                    particle.y ++;
+                    particle.x ++;
+                }
+            }
+            else
+            {
+                particle.y ++;
+                particle.x --;
+            }
+        }
+        else
+        {
+            particle.y ++;
+        }
+
+        map[particle.y * WIDTH+particle.x] = SYMBOL_FLUID;
+
+        debug_print(map,WIDTH,HEIGHT);
+
+        if(Y == particle.y)
+        {
+            particle.x = opening.x;
+            particle.y = opening.y;
+            particle_count++;
+        }
+        else
+        {
+            map[particle.y * WIDTH+particle.x] = SYMBOL_EMPTY;
+        }
+
+        if(particle.y > max.y)
+        {
+            printf("%i\n",particle_count);
+            return;
+        }
+    
+
+    }
     
 
     return 1;
