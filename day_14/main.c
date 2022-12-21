@@ -230,8 +230,8 @@ int main()
 
    
 
-    int WIDTH = max.x+1;
-    int HEIGHT = max.y+5;
+    int WIDTH =  max.y*max.x;
+    int HEIGHT = 2+max.y;
 
     int area = WIDTH *HEIGHT;
 
@@ -245,6 +245,7 @@ int main()
     generate_terrain(vector_lists,count,WIDTH ,&map[0]);
 
 
+
     Vector2i opening = {500-min.x,0};
     map[opening.y*WIDTH+opening.x] = SYMBOL_SOURCE;
 
@@ -256,9 +257,16 @@ int main()
     {
         //particle.y ++;
         int Y = particle.y;
+        int X = particle.y;
 
         int index = (particle.y + 1) * WIDTH + particle.x;
-        if(map[index] == SYMBOL_SOLID || map[index] == SYMBOL_FLUID)
+        
+        
+        if(particle.y == HEIGHT-1)
+        {
+
+        }
+        else if(map[index] == SYMBOL_SOLID || map[index] == SYMBOL_FLUID)
         {
             int index_left = (particle.y + 1) * WIDTH + (particle.x-1);
             if(map[index_left] == SYMBOL_SOLID || map[index_left] == SYMBOL_FLUID)
@@ -270,6 +278,7 @@ int main()
                 }
                 else
                 {
+
                     particle.y ++;
                     particle.x ++;
                 }
@@ -287,24 +296,38 @@ int main()
 
         map[particle.y * WIDTH+particle.x] = SYMBOL_FLUID;
 
-        debug_print(map,WIDTH,HEIGHT);
+        //debug_print(map,WIDTH,HEIGHT);
+
+
+
+
 
         if(Y == particle.y)
         {
+
+            particle_count++;
+            if(particle.y == opening.y && particle.x == opening.x)
+            {
+                printf("%i\n",particle_count);
+                return 0;
+            }
             particle.x = opening.x;
             particle.y = opening.y;
-            particle_count++;
         }
         else
         {
             map[particle.y * WIDTH+particle.x] = SYMBOL_EMPTY;
         }
 
+        
+
+//part1
+/*
         if(particle.y > max.y)
         {
             printf("%i\n",particle_count);
             return;
-        }
+        }*/
     
 
     }
