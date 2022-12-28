@@ -9,6 +9,16 @@
 #include <unistd.h>
 
 
+#define MAX_TRACKED_PATHS 2000000
+
+typedef struct Path Path;
+struct Path
+{
+    int max_flow;
+    int *indices;
+    int *time;
+};
+
 typedef struct Valve Valve;
 struct Valve
 {
@@ -218,80 +228,211 @@ Valve *parse_input(int *valve_count)
     free(input_raw);
 
     return valves;
-}
-int max_flow(Valve *valve,int time, int depth, int max_depth, int *open_valves, int valve_count)
+}   
+int max_flow2(Valve *valve,int time, int depth, int max_depth, int *open_valves, int valve_count,Path *paths, int *paths_tacked, int *time_stamps)
 {
-    int flow = valve->flow_rate * (30-(time));
-    open_valves[valve->index] = 1;
-    if(depth >= max_depth)return flow;
-    if(time >= 30)return 0;
-    int best_sub_flow = 0;  
+    if(depth > max_depth)return 0;
+    if(time > 30)return 0;
+
+    if(valve->flow_rate > 0)
+    {
+        time_stamps[valve->index] = time;
+        open_valves[valve->index] = 1;
+    }
 
     for (size_t i = 0; i < valve->neighbour_count; i++)
     {
-        if(!open_valves[i])
+        if(!open_valves[i] && valve->neighbours[i]->flow_rate > 0)
         {
             Valve *next_valve = valve->neighbours[i];
             int time_cost = valve->distances[i]+1;
 
             int *open_valves_copy = malloc(sizeof(int)*valve_count);
+            int *time_stamps_copy = malloc(sizeof(int)*valve_count);
             for (size_t j = 0; j < valve_count; j++)
             {
                 open_valves_copy[j] = open_valves[j];
+                time_stamps_copy[j] = time_stamps[j];
             }
-            int sub_flow = 0;
-
             
-            sub_flow = max_flow(next_valve,time + time_cost,depth+1,max_depth,open_valves_copy,valve_count);
+            max_flow2(next_valve,time + time_cost,depth+1,max_depth,&open_valves_copy[0],valve_count,&paths[0],paths_tacked,&time_stamps_copy[0]);
+
+            if(*paths_tacked < MAX_TRACKED_PATHS)
+            {
+                Path *path = &paths[*paths_tacked];
+                path->indices = malloc(sizeof(int)*valve_count);
+                path->time = malloc(sizeof(int)*valve_count);
+                for (size_t j = 0; j < valve_count; j++)
+                {
+                    path->indices[j] = open_valves_copy[j];
+                    path->time[j] = time_stamps_copy[j];
+                    path->max_flow = 0;
+                }
+
+                *paths_tacked = *paths_tacked +1;
+            }
 
             
             free(open_valves_copy);
+            free(time_stamps_copy);
 
-            if(sub_flow > best_sub_flow)
-            {
-                best_sub_flow = sub_flow;
-            }
         }
     }
-
-    return flow + best_sub_flow;
 }
-void part1()
+int main()
 {
     int valve_count = 0;
     Valve *valves = parse_input(&valve_count);
 
     int *open_valves = malloc(sizeof(int)*valve_count);
+    int *time_stamps = malloc(sizeof(int)*valve_count); 
 
     int max_depth = 1;
     Valve *starting_valve;
     for (size_t i = 0; i < valve_count; i++)
     {
-        if(valves[i].flow_rate == 0)
+        time_stamps[i] = 0;
+        if(valves[i].flow_rate != 0)
         {
-            open_valves[i] = 1;
-        }
-        else
-        {
-            open_valves[i] = 0;
             max_depth++;
         }
+        open_valves[i] = 0;
         if(valves[i].id == 0)
         {
             starting_valve = &valves[i];
         }
     }
-    int f = max_flow(starting_valve,0,1,max_depth,&open_valves[0],valve_count);
 
-    printf("%i\n",f);   
+    Path *paths = malloc(sizeof(Path)*MAX_TRACKED_PATHS);
+    int paths_traked = 0;
+
+    int starting_minute = 4;
+
+    //TODO remove depth check?
+    max_flow2(starting_valve,starting_minute,1,max_depth,&open_valves[0],valve_count, &paths[0],&paths_traked,&time_stamps[0]);
 
 
+    //Validate calculation
+    /*
+    Path *p = &paths[0];
+
+    p->indices = malloc(sizeof(int)*valve_count);
+    p->time = malloc(sizeof(int)*valve_count);
+
+    for (size_t i = 0; i < valve_count; i++)
+    {
+        p->indices[i] = 0;
+        p->time[i] = 0;
+    }
+
+    p->indices[3] = 1;
+    p->time[3] = 2;
+
+    p->indices[1] = 1;
+    p->time[1] = 5;
+
+    p->indices[9] = 1;
+    p->time[9] = 9;
+
+    p->indices[7] = 1;
+    p->time[7] = 17;
+
+    p->indices[4] = 1;
+    p->time[4] = 21;
+
+    p->indices[2] = 1;
+    p->time[2] = 24;
+
+    paths_traked += 1;
+    */
+
+
+   
+    int best = 0;
+
+    for (size_t i = 0; i < paths_traked; i++)
+    {
+        Path *p = &paths[i];
+        int flow = 0;
+        for (size_t j = 0; j < valve_count; j++)
+        {
+            if(p->indices[j] == 1)
+            {
+                int remaining_minutes = 30 - p->time[j];
+                flow += (valves[j].flow_rate * remaining_minutes);
+            }
+        }
+
+        if(best < flow)
+        {
+            best = flow;
+        }
+    }
+
+    printf("Max flow part 1: %i\n",best);
+
+   int best_combined = 0;
+   int best_i = 0;
+    for (size_t i = 0; i < paths_traked; i++)
+    {
+       
+        Path *p1 = &paths[i];
+
+        int flow_i = 0;
+        for (size_t j = 0; j < valve_count; j++)
+        {
+            if(p1->indices[j] == 1)
+            {
+                int remaining_minutes = 30 - p1->time[j];
+                flow_i += (valves[j].flow_rate * remaining_minutes);
+            }
+        }
+        p1->max_flow = flow_i;
+
+        if(flow_i > best_i)
+        {
+            for (size_t j = 0; j < paths_traked; j++)
+            {
+                Path *p2 = &paths[j];
+                for (size_t k = 0; k < valve_count; k++)
+                {
+                    if(p1->indices[k] == 1 && p2->indices[k] == 1 )
+                    {
+                        goto skip;
+                    }
+                }
+
+                int flow_j = 0;
+
+                if(p2->max_flow == 0)
+                {
+                    for (size_t k = 0; k < valve_count; k++)
+                    {
+                        
+                        if(p2->indices[k] == 1)
+                        {
+                            int remaining_minutes = 30 - p2->time[k];
+                            flow_j += (valves[k].flow_rate * remaining_minutes);
+                        }
+                    }
+                    p2->max_flow = flow_j;
+                }
+                else
+                {
+                    flow_j = p2->max_flow;
+                }
+                
+                if(best_combined < flow_i + flow_j)
+                {
+                    best_i = flow_i;
+                    best_combined = flow_i + flow_j;
+                }
+
+                skip:
+                
+            }
+        }
+    }
+    printf("max flow part 2: %i\n",best_combined);
     
-}
-
-int main()
-{
-    part1();
-    
-    return 1;
 }
