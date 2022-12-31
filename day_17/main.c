@@ -16,6 +16,14 @@ struct Shape
     unsigned int resting;
 };
 
+typedef struct Snapshot Snapshot;
+struct Snapshot
+{
+    int instruction_index;
+    int type,id, highest;
+    int delta[32];
+};
+
 static char *load_input(char *path)
 {
     FILE *f = fopen(path, "rb");
@@ -69,7 +77,6 @@ unsigned int shape_to_shape_collision(Shape *shape,Shape *resting_shape,char *sh
 
                                     if(x2 == x1 && y2 == y1)
                                     {
-                                        printf("%i,%i  %i,%i\n",x1,y1,x2,y2);
                                         return 1;
                                     }
                                 }
@@ -133,7 +140,7 @@ void shape_spawn(int strides[5],int lengths[5],Shape *shape,int spawn_x,int spaw
     shape->y = spawn_y - (lengths[type]/strides[type]);
     shape->resting = 0;
 }
-int main()
+void part1()
 {
     char shape_0[4] = {'#','#','#','#'};
 
@@ -195,14 +202,9 @@ int main()
     
     Shape *shape = &shape_pool[current_shape];
 
-
-
     int current_type = 0;
 
-
     shape_spawn(strides,lengths,shape,3,-4,current_type);
-
-
 
     unsigned int gravity = 1;
     int rocks = 0;
@@ -363,8 +365,216 @@ int main()
 
     
     printf("%i\n",highest);
+}
+#define MAX 30000
+
+void part2()
+{
+    char shape_0[4] = {'#','#','#','#'};
+
+    char shape_1[9] = 
+    {
+        '.','#','.',
+        '#','#','#',
+        '.','#','.'
+    };
+
+    char shape_2[9] = 
+    {
+        '.','.','#',
+        '.','.','#',
+        '#','#','#'
+    };
+
+    int strides[5] = {4,3,3,1,2};
+    int lengths[5] = {4,9,9,4,4};
+    char *shape_data[5] = {&shape_0[0],&shape_1[0],&shape_2[0],&shape_0[0],&shape_0[0]};
     
+    char *input_raw = load_input("input.txt");
+    int length = strlen(input_raw);
+
+    int index = 0;
+    int count = 0;
+    while (index <= length)
+    {
+        char c = input_raw[index];
+        if (c == '<' || c == '>')
+        {
+           count ++;
+        }
+        index++;
+    }
+    
+    int instruction_count = count;
+    char *instructions = malloc(sizeof(char)*instruction_count);
+    index = 0;
+    count = 0;
+    while (index <= length)
+    {
+        char c = input_raw[index];
+
+        if (c == '<' ||  c == '>')
+        {
+           instructions[count] = c;
+           count ++;
+        }
+        index++;
+    }
+
+    Shape *shape_pool = malloc(sizeof(Shape)*MAX);
+    int current_shape = 0;
+
+    Shape **shapes_resting = malloc(sizeof(Shape*)*MAX);
+    int shapes_resting_count = 0;
+    
+    Shape *shape = &shape_pool[current_shape];
+
+    int current_type = 0;
+
+    shape_spawn(strides,lengths,shape,3,-4,current_type);
+
+    unsigned int gravity = 1;
+    int rocks = 0;
+
+    int instruction = 0;
+    int highest = 0;
+    int highest_prev = 0;
+
+    Snapshot *snapshots = malloc(sizeof(Snapshot)*MAX);
+    int snapshot_index = 0;
+
+    int *deltas = malloc(sizeof(int)*MAX);
+    int delta_index = 0;
+
+    while(rocks < MAX)
+    {
+        
+        if(shape->resting)
+        {
+            if(highest > shape->y)
+            {
+                highest_prev = highest;
+                highest = shape->y;
+
+                deltas[delta_index++] = abs(highest - highest_prev);
+            }
+
+            if(rocks > 1000)
+            {
+                Snapshot *snapshot = &snapshots[snapshot_index];
+                snapshot->id = rocks;
+                snapshot->highest = abs(highest);
+                snapshot->instruction_index = instruction;
+                snapshot->type = current_type;
+                memcpy(&snapshot->delta[0],&deltas[delta_index-32],sizeof(int)*32);
+                snapshot_index++;
+            }
+
+            current_type ++;
+            if(current_type > 4)
+            {
+                current_type = 0;
+            }
+            int spawn_y = highest - 3;
+
+            current_shape ++;
+            shape = &shape_pool[current_shape];
+
+            shape_spawn(strides,lengths,shape,3,spawn_y - shape->h,current_type);
+
+            rocks ++;
+            
+        }
+        else
+        {
+            if(gravity)
+            {
+                if(!collision_v(&shapes_resting[0],shapes_resting_count,shape,1,shape_data))
+                {
+                    shape->y++;
+                }
+                else
+                {
+                    shape->resting = 1;
+                    shapes_resting[shapes_resting_count] = shape;
+                    shapes_resting_count++;
+
+                    if(highest > shape->y)
+                    {
+                        highest = shape->y;
+                    }
+
+                }
+            }
+            else
+            {
+                int tx = (instructions[instruction] == '<' ? -1:1);
+
+                
+                instruction = instruction +1 < instruction_count ? instruction + 1:0; 
+
+                if(!collision_h(&shapes_resting[0],shapes_resting_count,shape,tx,shape_data))
+                {
+                    shape->x+=tx;
+                }
+
+            }
+
+            gravity = !gravity;
+        }
+    }
 
 
+    for (size_t i = 0; i < snapshot_index; i++)
+    {
+        Snapshot *s1 = &snapshots[i];
+        for (size_t j = i+1; j < snapshot_index; j++)
+        {
+            Snapshot *s2 = &snapshots[j];
+            if(s1->instruction_index == s2->instruction_index)
+            {
+                if(s1->type == s2->type)
+                {
+                    for (size_t k = 0; k < 32; k++)
+                    {
+                        if(s1->delta[k] != s2->delta[k])
+                        {
+                            goto continue_loop;
+                        }
+                    }
+
+                    unsigned long trillion = 1000000000000;
+
+                    unsigned long height = 0;
+
+                    int rocks_per_cycle = s2->id - s1->id;
+                    int height_per_cycle = s2->highest - s1->highest;
+
+                    unsigned long cycles = (trillion - s1->id) / rocks_per_cycle;
+
+                    height += cycles * height_per_cycle;
+
+                    int remainder = (trillion - s1->id) % rocks_per_cycle;
+
+                    height += snapshots[i+remainder-1].highest;
+
+                    printf("height %lu\n",height);
+
+                    goto end_program;
+                }
+            }
+            continue_loop:
+        }
+    }
+    
+    end_program:
+}
+
+
+
+int main()
+{
+    //part1();
+    part2();
     return 0;
 }
