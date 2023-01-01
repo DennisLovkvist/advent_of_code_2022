@@ -1,0 +1,1 @@
+gcc -o main main.c -lm -O3;./main
